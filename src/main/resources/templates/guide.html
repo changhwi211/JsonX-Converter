@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<!-- chart js -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<!-- 합쳐지고 최소화된 최신 CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+<!-- 부가적인 테마 -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+<!-- 합쳐지고 최소화된 최신 자바스크립트 -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+<meta charset="utf-8">
+<title>CONVERTER</title>
+
+<style>
+textarea{
+	width:700px;
+	height:500px;
+}
+</style>
+</head>
+<body>
+	<div class="container-fluid">
+		<div class="page-header">
+			<h1 class="text-center">XML to JSON and JSON to XML Converter</h1>
+		</div>
+		
+		<div class="row">
+			<!-- output -->
+			<div class="col col-xs-12">
+				<ul class="nav nav-tabs" role="tablist" id="myTab">
+				  <li role="presentation" class="active"><a href="#XMLToJSON" aria-controls="XMLToJSON" role="tab" data-toggle="tab"><h4>XML to JSON</h4></a></li>
+				  <li role="presentation"><a href="#JSONToXML" aria-controls="JSONToXML" role="tab" data-toggle="tab"><h4>JSON to XML</h4></a></li>
+				</ul><br>
+				<div class="tab-content">
+					<div role="tabpanel" class="tab-pane active" id="XMLToJSON">
+						<div class="col-xs-5">
+							<div class="panel panel-default">
+							  <div class="panel-heading">
+							    <h3 class="panel-title">XML INPUT</h3>
+							  </div>
+							  <div class="panel-body">
+							    <textarea class="form-control" id="input-xml" rows="20"></textarea><br>
+							    <input id="xml-file" name="uploadfile" type="file" class="file" data-show-preview="false">	
+							  </div>
+							</div>
+						</div>
+						<div class="col-xs-2" style="display:table;height:500px">
+							<div style="display:table-cell;vertical-align:middle;">
+								<button class="btn btn-default btn-lg btn-block" type="button" id="convert-xml-to-json">CONVERT</button>
+							</div>
+						</div>
+						<div class="col-xs-5">
+							<div class="panel panel-default">
+							  <div class="panel-heading">
+							    <h3 class="panel-title">JSON OUTPUT</h3>
+							  </div>
+							  <div class="panel-body">
+							    <textarea class="form-control" id="output-xml-to-json" rows="20"></textarea>
+							  </div>
+							</div>
+							
+						</div>						
+					</div>
+				 	<div role="tabpanel" class="tab-pane" id="JSONToXML">
+				 		<div class="col-xs-5">
+				 			<div class="panel panel-default">
+							  <div class="panel-heading">
+							    <h3 class="panel-title">JSON INPUT</h3>
+							  </div>
+							  <div class="panel-body">
+							  	<textarea class="form-control" id="input-json" rows="20"></textarea><br>
+							    <input id="json-file" name="uploadfile" type="file" class="file" data-show-preview="false">	
+							  </div>
+							</div>
+				 		</div>
+						<div class="col-xs-2" style="display:table;height:500px">
+							<div style="display:table-cell;vertical-align:middle;">
+								<button class="btn btn-default btn-lg btn-block" type="button" id="convert-json-to-xml">CONVERT</button>
+							</div>
+						</div>
+						<div class="col-xs-5">
+							<div class="panel panel-default">
+							  <div class="panel-heading">
+							    <h3 class="panel-title">XML OUTPUT</h3>
+							  </div>
+							  <div class="panel-body">
+							  	<textarea class="form-control" id="output-json-to-xml" rows="20"></textarea>
+							  </div>
+							</div>
+						</div>						 
+				 	</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-2">
+				<button class="btn btn-default btn-block" type="button" id="view-status">VIEW STATUS</button><br>
+			</div>
+		</div>
+		<div id="status" class="row" style="display:none;">
+			<div class="col col-xs-4">
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						<h3 class="panel-title">STATUS</h3>
+					</div>
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>Converter</th>
+								<th>Request</th>
+								<th>Success</th>
+								<th>Failure</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>XML to JSON</td>
+								<td id="x2j-req">2</td>
+								<td id="x2j-suc">1</td>
+								<td id="x2j-fail">1</td>
+							</tr>
+							<tr>
+								<td>JSON to XML</td>
+								<td id="j2x-req">2</td>
+								<td id="j2x-suc">1</td>
+								<td id="j2x-fail">1</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="col col-xs-4">
+				<canvas id="x2jChart" height="80"></canvas>
+			</div>
+			<div class="col col-xs-4">
+				<canvas id="j2xChart" height="80"></canvas>
+			</div>
+		</div>
+	</div>
+</body>
+
+<script>
+//var url = "http://192.168.23.113:8080/";
+var url = "http://localhost:8080/";
+
+var x2jSuc = 0;
+var x2jFail = 0;
+var j2xSuc = 0;
+var j2xFail = 0;
+
+var x2jCtx = document.getElementById('x2jChart').getContext('2d');
+var x2jChart = new Chart(x2jCtx, {
+    type: 'horizontalBar',
+    data: {
+        labels: ["Success", "Failure"],
+        datasets: [{
+            data: [x2jSuc,x2jFail],
+            datalabels:{
+            	align:'start',
+            	anchor:'end'
+            },
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)'
+            ],
+            borderColor: [
+                'rgba(255,99,132,1)',
+                'rgba(54, 162, 235, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+    	plugins:{
+    		datalabels:{
+    			color:'black',
+    			display:function(context) {
+					return context.dataset.data[context.dataIndex] > 0;
+				},
+    			font: {
+					weight: 'bold'
+				},
+				formatter: Math.round
+    		}
+    	},
+    	title:{
+    		display: true,
+    		text: 'XML to JSON Status',
+    		fontSize: 16
+    	},
+        scales: {
+            xAxes: [{
+                ticks: {
+                    beginAtZero:true
+                }
+            }],
+            yAxes: [{
+            	barPercentage:0.5
+            }]
+        },
+        legend:{
+        	display: false
+        }
+    }
+});
+
+var j2xCtx = document.getElementById('j2xChart').getContext('2d');
+var j2xChart = new Chart(j2xCtx, {
+    type: 'horizontalBar',
+    data: {
+        labels: ["Success", "Failure"],
+        datasets: [{
+            data: [j2xSuc,j2xFail],
+            datalabels:{
+            	align:'start',
+            	anchor:'end'
+            },
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)'
+            ],
+            borderColor: [
+                'rgba(255,99,132,1)',
+                'rgba(54, 162, 235, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+    	plugins:{
+    		datalabels:{
+    			color:'black',
+    			display:function(context) {
+					return context.dataset.data[context.dataIndex] > 0;
+				},
+    			font: {
+					weight: 'bold'
+				},
+				formatter: Math.round
+    		}
+    	},
+    	title:{
+    		display: true,
+    		text: 'JSON to XML Status',
+    		fontSize: 16
+    	},
+        scales: {
+            xAxes: [{
+                ticks: {
+                    beginAtZero:true
+                }
+            }],
+            yAxes: [{
+            	barPercentage:0.5
+            }]
+        },
+        legend:{
+        	display: false
+        }
+    }
+});
+
+
+$.getJSON(url+"status?name=XMLToJSON&result=load",function(data){
+	x2jSuc = data.successCount;
+	x2jFail = data.failureCount;
+	
+	x2jChart.data.datasets[0].data[0] = x2jSuc;
+	x2jChart.data.datasets[0].data[1] = x2jFail;
+	x2jChart.update();
+	
+	$("#x2j-req").html(x2jSuc+x2jFail);
+	$("#x2j-suc").html(x2jSuc);
+	$("#x2j-fail").html(x2jFail);
+});
+
+$.getJSON(url+"status?name=JSONToXML&result=load",function(data){
+	j2xSuc = data.successCount;
+	j2xFail = data.failureCount;
+	
+
+	j2xChart.data.datasets[0].data[0] = j2xSuc;
+	j2xChart.data.datasets[0].data[1] = j2xFail;
+	j2xChart.update();
+	
+	$("#j2x-req").html(j2xSuc+j2xFail);
+	$("#j2x-suc").html(j2xSuc);
+	$("#j2x-fail").html(j2xFail);
+});
+
+
+var formData;
+
+
+$("#xml-file").change(function(e){
+	$("#output-xml-to-json").html("");
+	var fileName = $("#xml-file").val();
+	
+	if(!fileName){
+		return;
+	}
+
+	var ext = fileName.slice(fileName.indexOf(".")+1).toLowerCase();
+
+	if(ext !="xml" && ext != "txt"){
+		alert("txt, xml 형식의 파일만 가능합니다.");
+		$("#xml-file").val("");
+		$("#input-xml").val("");
+		return;
+	}
+	
+	formData = new FormData();
+	
+	formData.append("file",$("input[name=uploadfile]")[0].files[0]);
+	$.ajax({
+		type: "POST",
+		url: url+"loadXMLFile",
+		processData: false,
+		contentType: false,
+		data: formData,
+		success: function(result){
+			
+			var xmlText = new XMLSerializer().serializeToString(result);
+			xmlText = xmlText.replace(/\?\>/g,"?>\r\n");
+			
+			$("#input-xml").val(xmlText);
+		}
+	});
+});
+
+$("#json-file").change(function(e){
+	$("#output-json-to-xml").html("");
+	var fileName = $("#json-file").val();
+	
+	if(!fileName){
+		return;
+	}
+	
+	var ext = fileName.slice(fileName.indexOf(".")+1).toLowerCase();
+	if(ext !="json" && ext != "txt"){
+		alert("txt, json 형식의 파일만 가능합니다.");
+		$("#json-file").val("");
+		$("#input-json").val("");
+		return;
+	}
+	
+	formData = new FormData();
+	
+	formData.append("file",$("input[name=uploadfile]")[1].files[0]);
+	$.ajax({
+		type: "POST",
+		url: url+"loadJSONFile",
+		processData: false,
+		contentType: false,
+		data: formData,
+		success: function(result){
+			
+			$("#input-json").val(JSON.stringify(result,null,4));
+		
+		}
+	});
+	
+});
+
+$("#id-xml-to-json").on("click",function(){
+	$("#output-xml-to-json").empty();
+	$("#xml-to-json").show();
+	$("#json-to-xml").hide();
+});
+
+$("#id-json-to-xml").on("click",function(){
+	$("#xml-to-json").hide();
+	$("#output-json-to-xml").empty();
+	$("#json-to-xml").show();
+});
+
+var isView = false;
+
+$("#view-status").on("click",function(){
+	if(!isView){
+		$("#status").show();
+		$("#view-status").html("HIDE STATUS");
+		isView = !isView;
+	}else{
+		$("#status").hide();
+		$("#view-status").html("VIEW STATUS");
+		isView = !isView;
+	}
+});
+
+var xml2json = function(_data){
+	$.ajax({   
+	    type: "POST",   
+	    url: url + "xml2json",   
+	    data: _data,
+	    contentType : "application/xml",
+	    cache: false,
+		success : function(data) {
+			$("#output-xml-to-json").css("color","black");
+	    	$("#output-xml-to-json").val(JSON.stringify(data,null,4));
+	    	
+	    	$.getJSON(url+"status?name=XMLToJSON&result=success",function(data){
+	    		
+	    		x2jSuc = data.successCount;
+	    		
+	    		x2jChart.data.datasets[0].data[0] = x2jSuc;
+	    		x2jChart.update();
+	    		
+	    		$("#x2j-req").html(x2jSuc+x2jFail);
+	    		$("#x2j-suc").html(x2jSuc);
+	    	});
+		},
+		error : function(request,status,error){
+			$("#output-xml-to-json").css("color","red");
+			$("#output-xml-to-json").val(request.responseText);
+			
+			$.getJSON(url+"status?name=XMLToJSON&result=failure",function(data){
+	    		
+				x2jFail = data.failureCount
+	    		
+				x2jChart.data.datasets[0].data[1] = x2jFail;
+				x2jChart.update();
+				
+				$("#x2j-req").html(x2jSuc+x2jFail);
+				$("#x2j-fail").html(x2jFail);
+	    	});
+		}
+	});
+}
+
+var json2xml = function(_data){
+	$.ajax({   
+	    type: "POST",   
+	    url: url + "json2xml",   
+	    data: _data,
+	    contentType : "application/json",
+	    cache: false,
+		success : function(data) {  	
+			var xmlText = new XMLSerializer().serializeToString(data);
+			
+			xmlText = xmlText.replace(/\?\>/g,"?>\r\n");
+			$("#output-json-to-xml").css("color","black");
+	    	$("#output-json-to-xml").val(xmlText);
+	    	
+	    	$.getJSON(url+"status?name=JSONToXML&result=success",function(data){
+	    		j2xSuc = data.successCount;
+	    		
+	    		j2xChart.data.datasets[0].data[0] = j2xSuc;
+	    		j2xChart.update();
+	    		
+	    		$("#j2x-req").html(j2xSuc+j2xFail);
+	    		$("#j2x-suc").html(j2xSuc);
+	    	});
+		},
+		error : function(request,status,error){
+			$("#output-json-to-xml").css("color","red");
+			$("#output-json-to-xml").val(request.responseText);
+			
+			$.getJSON(url+"status?name=JSONToXML&result=failure",function(data){
+				j2xFail = data.failureCount;
+	    		
+				j2xChart.data.datasets[0].data[1] = j2xFail;
+	    		j2xChart.update();
+				
+	    		$("#j2x-req").html(j2xSuc+j2xFail);
+				$("#j2x-fail").html(j2xFail);
+	    	});
+		}
+	});
+}
+
+$("#convert-xml-to-json").on("click",function(){
+	var data = $("#input-xml").val();
+	if(!data) {
+		data = "<data></data>"
+	}
+	xml2json(data);
+});
+
+$("#convert-json-to-xml").on("click",function(){
+	var data = $("#input-json").val();
+	if(!data) {
+		data = "{ a : 1 }"
+	}
+	json2xml(data);
+});
+</script>
+
+</html>
